@@ -1,0 +1,9 @@
+# @package _global_
+
+defaults:
+  - override /method: tsa
+  - override /model: tangent_lda
+  - _self_
+
+experiment_name: tsa
+
