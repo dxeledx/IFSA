@@ -1,0 +1,13 @@
+# @package _global_
+
+defaults:
+  - override /method: ra
+  - override /model: csp_lda
+  - _self_
+
+experiment_name: ra_v14_lw
+
+preprocess:
+  covariance:
+    estimator: ledoit_wolf
+

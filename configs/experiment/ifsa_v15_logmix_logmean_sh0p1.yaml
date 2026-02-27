@@ -1,0 +1,17 @@
+# @package _global_
+
+defaults:
+  - override /method: ifsa
+  - override /model: csp_lda
+  - _self_
+
+experiment_name: ifsa_v15_logmix_logmean_sh0p1
+
+method:
+  mean_mode: logeuclid
+  ref_subject_mean_mode: logeuclid
+  cov_shrink_alpha: 0.1
+
+  # Use log-domain interpolation when mixing A (smoother in SPD geometry).
+  a_mix_mode: log
+

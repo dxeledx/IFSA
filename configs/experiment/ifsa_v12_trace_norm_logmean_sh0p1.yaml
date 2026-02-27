@@ -1,0 +1,19 @@
+# @package _global_
+
+defaults:
+  - override /method: ifsa
+  - override /model: csp_lda
+  - _self_
+
+experiment_name: ifsa_v12_trace_norm_logmean_sh0p1
+
+method:
+  lambda_damp: 0.0
+  lr: 0.15
+  lambda_u: 0.0
+  mean_mode: logeuclid
+  ref_subject_mean_mode: logeuclid
+  cov_trace_norm: true
+  cov_shrink_alpha: 0.1
+  output_space: reference
+

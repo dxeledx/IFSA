@@ -1,0 +1,19 @@
+# @package _global_
+
+defaults:
+  - override /method: ifsa
+  - override /model: csp_lda
+  - _self_
+
+experiment_name: ifsa_v12_ctrl
+
+method:
+  lambda_damp: 0.0
+  lr: 0.15
+  lambda_u: 0.0
+  mean_mode: arith
+  ref_subject_mean_mode: arith
+  cov_trace_norm: false
+  cov_shrink_alpha: 0.0
+  output_space: reference
+

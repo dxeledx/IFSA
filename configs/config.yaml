@@ -1,0 +1,19 @@
+defaults:
+  - dataset: bci_iv_2a
+  - preprocess: default_mi
+  - protocol: loso
+  - method: identity
+  - model: csp_lda
+  - runtime: default
+  - experiment: base
+  - _self_
+
+eval:
+  compute_baseline: true
+  baseline_method: identity
+
+hydra:
+  run:
+    dir: runs/${now:%Y-%m-%d}/${now:%H-%M-%S}
+  job:
+    chdir: false

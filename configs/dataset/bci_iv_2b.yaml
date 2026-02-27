@@ -1,0 +1,5 @@
+name: bci_iv_2b
+moabb_class: BNCI2014_004
+events: ["left_hand", "right_hand"]
+subjects: null
+

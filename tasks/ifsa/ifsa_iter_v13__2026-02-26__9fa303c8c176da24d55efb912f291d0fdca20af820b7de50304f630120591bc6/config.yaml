@@ -1,0 +1,56 @@
+dataset:
+  name: bci_iv_2b
+  moabb_class: BNCI2014_004
+  events:
+  - left_hand
+  - right_hand
+  subjects: null
+preprocess:
+  fmin: 8.0
+  fmax: 30.0
+  tmin: 0.5
+  tmax: 3.5
+  resample: null
+  drop_eog: true
+  scale: 1000000.0
+  covariance:
+    estimator: scm
+    epsilon: 1.0e-06
+protocol:
+  name: loso
+  target_data_usage: online_prefix_unlabeled
+  online_prefix_n_trials: 20
+  few_shot_n_trials: 10
+method:
+  name: ifsa
+  lambda_track: 1.0
+  lambda_spec: 0.2
+  lambda_damp: 0.2
+  cov_trace_norm: false
+  cov_shrink_alpha: 0.1
+  mean_mode: logeuclid
+  target_beta: 0.0
+  lambda_u: 0.05
+  k_steps: 10
+  lr: 0.3
+  ema_alpha: 0.8
+  trigger_tau: 0.5
+  trigger_mode: fixed
+  trigger_quantile: 0.7
+  damp_mode: euclid_ema
+  output_space: reference
+  ref_subject_mean_mode: logeuclid
+model:
+  name: csp_lda
+  n_components: 6
+  reg: ledoit_wolf
+runtime:
+  seed: 42
+  n_jobs: 1
+  cache_dir: data/cache
+  results_dir: results
+  capture_env: true
+experiment_name: ifsa_v11_logmean_shrink0p1
+eval:
+  compute_baseline: true
+  baseline_method: identity

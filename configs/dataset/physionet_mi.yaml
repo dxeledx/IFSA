@@ -1,0 +1,4 @@
+name: physionet_mi
+moabb_class: PhysionetMI
+events: ["left_hand", "right_hand"]
+subjects: null

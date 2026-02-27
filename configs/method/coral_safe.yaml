@@ -1,0 +1,12 @@
+name: coral_safe
+
+# Mean operator used for source/target mean covariances (arith | logeuclid).
+mean_mode: logeuclid
+
+# Safety clutch (hold -> identity) triggered by target OOD score, with a
+# disc-loss secondary guard to avoid false holds. All safety statistics use
+# source-only labels and/or covariances; no target labels are used.
+safety_quantile: 0.90
+safety_tau_mult: 1.0
+safety_disc_loss_tau: 0.001
+

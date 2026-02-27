@@ -1,0 +1,74 @@
+dataset:
+  name: bci_iv_2a
+  moabb_class: BNCI2014_001
+  events:
+  - left_hand
+  - right_hand
+  - feet
+  - tongue
+  subjects: null
+preprocess:
+  fmin: 8.0
+  fmax: 30.0
+  tmin: 0.5
+  tmax: 3.5
+  resample: null
+  drop_eog: true
+  scale: 1000000.0
+  covariance:
+    estimator: scm
+    epsilon: 1.0e-06
+protocol:
+  name: loso
+  target_data_usage: transductive_unlabeled_all
+  online_prefix_n_trials: 20
+  few_shot_n_trials: 10
+method:
+  name: ifsa
+  lambda_track: 4.0
+  lambda_spec: 0.0
+  lambda_damp: 0.0
+  cov_trace_norm: false
+  cov_shrink_alpha: 0.0
+  cov_log_spec_shrink: 0.0
+  mean_mode: logeuclid
+  target_beta: 1.0
+  desired_shrink_alpha: 0.0
+  desired_log_spec_shrink: 0.0
+  lambda_u: 0.0
+  k_steps: 1
+  lr: 0.3
+  ema_alpha: 1.0
+  thrust_mode: euclid
+  a_mix_mode: euclid
+  lambda_disp: 0.0
+  disp_scale_min: 0.5
+  disp_scale_max: 2.0
+  trigger_tau: 0.0
+  trigger_mode: fixed
+  trigger_quantile: 0.7
+  damp_mode: euclid_ema
+  output_space: reference
+  ref_subject_mean_mode: logeuclid
+  safety_score_mode: track_error
+  safety_mode: scale_gain
+  safety_quantile: 0.9
+  safety_tau_mult: 0.5
+  safety_gain_min: 0.0
+  safety_hold_gate_threshold: 0.5
+  safety_disc_loss_tau: 0.001
+  safety_low_score_mult: 0.0
+model:
+  name: csp_lda
+  n_components: 6
+  reg: ledoit_wolf
+runtime:
+  seed: 42
+  n_jobs: 1
+  cache_dir: data/cache
+  results_dir: results
+  capture_env: true
+experiment_name: ifsa_v32_euclid_thrust_track_scale_tau0p5_hold0p5_disc0p001
+eval:
+  compute_baseline: true
+  baseline_method: identity

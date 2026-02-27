@@ -1,0 +1,36 @@
+# @package _global_
+
+defaults:
+  - override /method: ifsa
+  - override /model: csp_lda
+  - _self_
+
+experiment_name: ifsa_v20_ctrl
+
+method:
+  # v13 target-guided backbone (CORAL-like).
+  target_beta: 1.0
+  mean_mode: logeuclid
+  ref_subject_mean_mode: logeuclid
+
+  cov_trace_norm: false
+  cov_shrink_alpha: 0.0
+  lambda_damp: 0.0
+  damp_mode: euclid_ema
+
+  lambda_spec: 0.0
+  lambda_u: 0.0
+  output_space: reference
+
+  ema_alpha: 1.0
+  k_steps: 1
+  lr: 0.3
+  lambda_track: 4.0
+
+  # v20 safety clutch: off (control)
+  safety_mode: none
+  safety_score_mode: track_error
+  safety_tau_mult: 1.0
+
+  trigger_mode: fixed
+

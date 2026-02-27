@@ -1,0 +1,31 @@
+# @package _global_
+
+defaults:
+  - override /method: ifsa
+  - override /model: csp_lda
+  - _self_
+
+experiment_name: ifsa_v13_tg_beta1_full_u0p05
+
+method:
+  # Start from ifsa_v13_tg_beta1_full, add a small energy penalty.
+  target_beta: 1.0
+  mean_mode: logeuclid
+  ref_subject_mean_mode: logeuclid
+
+  cov_trace_norm: false
+  cov_shrink_alpha: 0.0
+  lambda_damp: 0.0
+  damp_mode: euclid_ema
+
+  lambda_spec: 0.0
+  lambda_u: 0.05
+  output_space: reference
+
+  ema_alpha: 1.0
+  k_steps: 1
+  lr: 0.3
+  lambda_track: 4.0
+
+  trigger_mode: fixed
+

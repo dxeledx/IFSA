@@ -1,0 +1,16 @@
+# @package _global_
+
+# Minimal smoke experiment: 2 subjects only (fast-ish; still downloads data)
+defaults:
+  - override /dataset: bci_iv_2a
+  - override /method: ea
+  - override /model: csp_lda
+  - _self_
+
+experiment_name: smoke
+
+dataset:
+  subjects: [1, 2]
+
+runtime:
+  n_jobs: 1

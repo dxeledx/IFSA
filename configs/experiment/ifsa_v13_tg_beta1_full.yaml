@@ -1,0 +1,34 @@
+# @package _global_
+
+defaults:
+  - override /method: ifsa
+  - override /model: csp_lda
+  - _self_
+
+experiment_name: ifsa_v13_tg_beta1_full
+
+method:
+  target_beta: 1.0
+  mean_mode: logeuclid
+  ref_subject_mean_mode: logeuclid
+
+  # Align to CORAL-like statistics: disable preconditioning that changes the covariance
+  # "measurement space" before estimating A.
+  cov_trace_norm: false
+  cov_shrink_alpha: 0.0
+  lambda_damp: 0.0
+  damp_mode: euclid_ema
+
+  # Disable extra constraints to test pure target-mean guidance.
+  lambda_spec: 0.0
+  lambda_u: 0.0
+  output_space: reference
+
+  # Make gain_eff ~= 1 (almost full recoloring to the desired covariance).
+  ema_alpha: 1.0
+  k_steps: 1
+  lr: 0.3
+  lambda_track: 4.0
+
+  trigger_mode: fixed
+

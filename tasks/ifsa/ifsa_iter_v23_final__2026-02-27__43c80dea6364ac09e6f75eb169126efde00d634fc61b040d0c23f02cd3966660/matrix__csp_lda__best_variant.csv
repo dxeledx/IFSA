@@ -1,0 +1,7 @@
+,bci_iv_2a__transductive_unlabeled_all,bci_iv_2a__online_prefix_unlabeled,bci_iv_2b__transductive_unlabeled_all,bci_iv_2b__online_prefix_unlabeled
+identity,identity,identity,identity,identity
+ea,ea,ea,ea,ea
+ra,ra,ra,ra,ra_v14_lw
+ra_riemann,ra_riemann,ra_riemann,ra_riemann,ra_riemann
+coral,coral,coral,coral,coral_v14_lw
+ifsa,ifsa_v23_track_scale_tau0p5_hold0p5_disc0p001,ifsa_v21_track_hold_q0p90_disc0p001,ifsa_v13_tg_beta1_full,ifsa_v11_logmean_shrink0p1

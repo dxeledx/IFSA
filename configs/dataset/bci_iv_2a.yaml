@@ -1,0 +1,5 @@
+name: bci_iv_2a
+moabb_class: BNCI2014_001
+events: ["left_hand", "right_hand", "feet", "tongue"]
+subjects: null  # null = all
+

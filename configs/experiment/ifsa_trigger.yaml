@@ -1,0 +1,13 @@
+# @package _global_
+
+defaults:
+  - override /dataset: bci_iv_2a
+  - override /method: ifsa
+  - override /model: csp_lda
+  - _self_
+
+experiment_name: ifsa_trigger
+
+method:
+  trigger_tau: 0.5
+

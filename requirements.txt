@@ -1,0 +1,28 @@
+# NOTE: RLserver-ex uses Python 3.10.12, while local may be newer.
+# Pin per-Python versions to keep wheels available on both sides.
+numpy==2.2.6; python_version < "3.11"
+numpy==2.4.2; python_version >= "3.11"
+
+scipy==1.15.3; python_version < "3.11"
+scipy==1.17.1; python_version >= "3.11"
+
+pandas==2.3.2; python_version < "3.11"
+pandas==2.3.3; python_version >= "3.11"
+
+scikit-learn==1.7.2; python_version < "3.11"
+scikit-learn==1.8.0; python_version >= "3.11"
+
+mne==1.11.0
+moabb==1.4.3
+pyriemann==0.10
+
+hydra-core==1.3.2
+matplotlib==3.8.4; python_version < "3.11"
+matplotlib==3.10.8; python_version >= "3.11"
+seaborn==0.13.2
+joblib==1.5.2
+pyyaml==6.0.2
+tqdm==4.67.1
+
+# MOABB runtime dependency (not declared upstream as of 1.4.3)
+filelock==3.24.3

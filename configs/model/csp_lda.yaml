@@ -1,0 +1,4 @@
+name: csp_lda
+n_components: 6
+reg: "ledoit_wolf"  # passed to MNE CSP
+

@@ -1,0 +1,25 @@
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.venv/
+
+# Build / dist
+build/
+dist/
+
+# Experiment artifacts (keep directory markers)
+runs/*
+!runs/.gitkeep
+
+results/*
+!results/.gitkeep
+!results/tables/.gitkeep
+!results/figures/.gitkeep
+
+# Local data caches (downloaded datasets, precomputed features)
+data/

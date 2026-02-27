@@ -1,0 +1,17 @@
+# @package _global_
+
+# Minimal PhysionetMI smoke experiment: 2 subjects only.
+defaults:
+  - override /dataset: physionet_mi
+  - override /method: ea
+  - override /model: csp_lda
+  - _self_
+
+experiment_name: physionet_smoke
+
+dataset:
+  subjects: [1, 2]
+
+runtime:
+  n_jobs: 4
+

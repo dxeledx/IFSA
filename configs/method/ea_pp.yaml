@@ -1,0 +1,8 @@
+name: ea_pp
+lambda_mean: 1.0
+lambda_spec: 0.2
+lambda_u: 0.05
+k_steps: 10
+lr: 0.5
+ema_alpha: 0.8
+

@@ -1,0 +1,12 @@
+# @package _global_
+
+defaults:
+  - override /dataset: bci_iv_2a
+  - override /method: ea_pp
+  - override /model: csp_lda
+  - _self_
+
+experiment_name: ea_pp_no_energy
+
+method:
+  lambda_u: 0.0

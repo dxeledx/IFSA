@@ -1,0 +1,5 @@
+name: tsa_ss
+anchor_strategy: pseudo_label
+k_dim: 16
+subspace_lock_weight: 1.0  # 0=full rotation, 1=lock stable subspace
+

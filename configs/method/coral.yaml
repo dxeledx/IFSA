@@ -1,0 +1,5 @@
+name: coral
+
+# Mean operator used for source/target mean covariances (arith | logeuclid).
+mean_mode: logeuclid
+

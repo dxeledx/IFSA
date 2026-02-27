@@ -1,0 +1,7 @@
+,bci_iv_2a__transductive_unlabeled_all,bci_iv_2a__online_prefix_unlabeled,bci_iv_2b__transductive_unlabeled_all,bci_iv_2b__online_prefix_unlabeled
+identity,0.415509,0.415509,0.698237,0.698237
+ea,0.491512,0.459877,0.728496,0.697231
+ra,0.509066,0.471836,0.726943,0.701110
+ra_riemann,0.507716,0.473380,0.726806,0.701131
+coral,0.510224,0.471065,0.726943,0.701110
+ifsa,0.512346,0.482253,0.732832,0.722982

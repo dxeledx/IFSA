@@ -1,0 +1,9 @@
+# @package _global_
+
+defaults:
+  - override /dataset: bci_iv_2a
+  - override /method: tsa_ss
+  - override /model: tangent_lda
+  - _self_
+
+experiment_name: tsa_ss

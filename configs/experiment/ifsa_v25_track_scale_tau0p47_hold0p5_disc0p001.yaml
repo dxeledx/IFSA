@@ -1,0 +1,39 @@
+# @package _global_
+
+defaults:
+  - override /method: ifsa
+  - override /model: csp_lda
+  - _self_
+
+experiment_name: ifsa_v25_track_scale_tau0p47_hold0p5_disc0p001
+
+method:
+  # v13 target-guided backbone (CORAL-like).
+  target_beta: 1.0
+  mean_mode: logeuclid
+  ref_subject_mean_mode: logeuclid
+
+  cov_trace_norm: false
+  cov_shrink_alpha: 0.0
+  lambda_damp: 0.0
+  damp_mode: euclid_ema
+
+  lambda_spec: 0.0
+  lambda_u: 0.0
+  output_space: reference
+
+  ema_alpha: 1.0
+  k_steps: 1
+  lr: 0.3
+  lambda_track: 4.0
+
+  safety_score_mode: track_error
+  safety_mode: scale_gain
+  safety_quantile: 0.90
+  safety_tau_mult: 0.47
+  safety_gain_min: 0.0
+  safety_hold_gate_threshold: 0.5
+  safety_disc_loss_tau: 0.001
+
+  trigger_mode: fixed
+

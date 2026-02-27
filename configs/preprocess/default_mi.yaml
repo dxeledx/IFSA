@@ -1,0 +1,14 @@
+# MI default preprocessing (MNE/MOABB pipeline)
+fmin: 8.0
+fmax: 30.0
+tmin: 0.5
+tmax: 3.5
+resample: null
+drop_eog: true
+
+# MOABB/MNE returns signals in Volts; scale to microvolts for numerically stable covariances.
+scale: 1.0e6
+
+covariance:
+  estimator: scm  # scm | ledoit_wolf
+  epsilon: 1.0e-6

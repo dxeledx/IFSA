@@ -1,0 +1,22 @@
+# @package _global_
+
+defaults:
+  - override /dataset: bci_iv_2a
+  - override /method: ifsa
+  - override /model: csp_lda
+  - _self_
+
+experiment_name: ifsa_v11_logmean_shrink0p1
+
+protocol:
+  target_data_usage: transductive_unlabeled_all
+
+method:
+  mean_mode: logeuclid
+  ref_subject_mean_mode: logeuclid
+  cov_shrink_alpha: 0.1
+  damp_mode: euclid_ema
+  output_space: reference
+  trigger_mode: fixed
+  trigger_tau: 0.0
+

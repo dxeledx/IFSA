@@ -1,0 +1,5 @@
+name: loso
+target_data_usage: transductive_unlabeled_all  # transductive_unlabeled_all | online_prefix_unlabeled | few_shot_labeled
+online_prefix_n_trials: 20
+few_shot_n_trials: 10
+

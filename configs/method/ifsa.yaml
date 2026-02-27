@@ -1,0 +1,100 @@
+name: ifsa
+
+# Tracking (reference-following) gain.
+lambda_track: 1.0
+
+# Stabilize spectrum of A (reduce eigen spread).
+lambda_spec: 0.2
+
+# Damping (EMA smoothing of trial covariances).
+lambda_damp: 0.2
+
+# Normalize each trial covariance by its mean trace (remove global scale).
+cov_trace_norm: false
+
+# Trace shrinkage for trial covariances (0..0.3).
+cov_shrink_alpha: 0.0
+
+# Log-spectrum shrinkage for trial covariances (0..1). 0 disables.
+cov_log_spec_shrink: 0.0
+
+# Mean operator on SPD matrices used inside IFSA (arith | logeuclid).
+mean_mode: arith
+
+# Target guidance strength (0..1). 0 = no target guidance (default).
+target_beta: 0.0
+
+# Regularization for the desired reference covariance (target-guided only).
+desired_shrink_alpha: 0.0
+desired_log_spec_shrink: 0.0
+
+# Control energy constraint (pull A towards identity).
+lambda_u: 0.05
+
+# Closed-loop update steps (thrust phase).
+k_steps: 10
+
+# Step size for closed-loop update.
+lr: 0.3
+
+# EMA smoothing for A updates (0..1; higher = smoother).
+ema_alpha: 0.8
+
+# Thrust solution family:
+# - spd: symmetric SPD thrust (legacy)
+# - euclid: Euclidean thrust (A may be non-symmetric), solves A * M * A^T = desired
+thrust_mode: spd
+
+# How to mix A between identity and candidate (euclid | log).
+a_mix_mode: euclid
+
+# Dispersion matching (target-guided only; compares source vs target dispersion
+# in reference-whitened coordinates).
+lambda_disp: 0.0
+disp_scale_min: 0.5
+disp_scale_max: 2.0
+
+# Event-trigger threshold on tracking error; 0.0 means "always thrust".
+trigger_tau: 0.0
+
+# Trigger threshold policy: fixed | source_quantile (computed per-fold from source subjects).
+trigger_mode: fixed
+
+# Quantile for source-quantile trigger (only used when trigger_mode=source_quantile).
+trigger_quantile: 0.7
+
+# Damping mode: euclid_ema | log_ema
+damp_mode: euclid_ema
+
+# Output space: reference (align to R_*) | identity (post-whiten by R_*^{-1/2})
+output_space: reference
+
+# Mean mode for per-subject cov mean when estimating reference R_* from source subjects.
+ref_subject_mean_mode: arith
+
+# Target-guided safety clutch (applied only when target_beta > 0).
+# - none: always apply target-guided alignment
+# - scale_gain: downscale lambda_track when target looks OOD
+# - hold_identity: fall back to identity when target looks OOD
+# safety_score_mode:
+# - track_error: distance-to-inertial (unlabeled)
+# - split_half: within-subset stability (unlabeled)
+# - disc_loss: discriminative-structure collapse on source (label-aware, source-only)
+safety_score_mode: track_error
+safety_mode: none
+safety_quantile: 0.95
+safety_tau_mult: 1.0
+safety_gain_min: 0.0
+
+# For safety_mode=scale_gain: if gate_factor falls below this threshold, force a
+# hard hold (fallback to identity) for that fold. 0 disables.
+safety_hold_gate_threshold: 0.0
+
+# Optional secondary gate for v21-style "track_error AND disc_loss" safety.
+# If >0, then hold_identity will only trigger when disc_loss > this threshold.
+safety_disc_loss_tau: 0.0
+
+# Optional v30 low-score hold: when the target safety score is *very small*
+# relative to tau_eff, skip alignment (fallback to identity) to avoid injecting
+# noise. 0 disables.
+safety_low_score_mult: 0.0
