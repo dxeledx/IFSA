@@ -1,0 +1,6 @@
+dataset,target_data_usage,model,target_variant,baseline_variant,n_subjects,acc_mean_target,acc_mean_baseline,delta_mean,p_value,effect_rank_biserial,neg_transfer_ratio,p_holm
+bci_iv_2a,transductive_unlabeled_all,csp_lda,ifsa_final_v2,identity,9,0.5140817901234569,0.41550925925925924,0.09857253086419752,0.0078125,1.0,0.0,0.0390625
+bci_iv_2a,transductive_unlabeled_all,csp_lda,ifsa_final_v2,ea,9,0.5140817901234569,0.4915123456790123,0.022569444444444437,0.02734375,0.8222222222222222,0.1111111111111111,0.109375
+bci_iv_2a,transductive_unlabeled_all,csp_lda,ifsa_final_v2,ra_riemann,9,0.5140817901234569,0.5077160493827161,0.006365740740740724,0.140625,0.6111111111111112,0.2222222222222222,0.421875
+bci_iv_2a,transductive_unlabeled_all,csp_lda,ifsa_final_v2,ra,9,0.5140817901234569,0.5090663580246912,0.005015432098765433,0.328125,0.4166666666666667,0.2222222222222222,0.65625
+bci_iv_2a,transductive_unlabeled_all,csp_lda,ifsa_final_v2,coral,9,0.5140817901234569,0.5102237654320988,0.003858024691358023,1.0,1.0,0.0,1.0
