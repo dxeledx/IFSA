@@ -1,0 +1,7 @@
+,physionet_mi__transductive_unlabeled_all
+identity,0.617319
+ea,0.688487
+ra,0.675303
+ra_riemann,0.685148
+coral,0.675303
+ifsa,0.675434

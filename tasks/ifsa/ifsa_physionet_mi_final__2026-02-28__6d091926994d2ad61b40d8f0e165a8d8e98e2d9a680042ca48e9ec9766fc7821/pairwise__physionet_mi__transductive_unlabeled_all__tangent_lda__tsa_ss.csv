@@ -1,0 +1,2 @@
+dataset,target_data_usage,model,target_variant,baseline_variant,n_subjects,acc_mean_target,acc_mean_baseline,delta_mean,p_value,effect_rank_biserial,neg_transfer_ratio,p_holm
+physionet_mi,transductive_unlabeled_all,tangent_lda,tsa_ss,tsa,109,0.5763939665677956,0.5773558514022058,-0.0009618848344101832,0.8589592690527521,-0.04,0.12844036697247707,0.8589592690527521

@@ -1,0 +1,40 @@
+dataset:
+  name: physionet_mi
+  moabb_class: PhysionetMI
+  events:
+  - left_hand
+  - right_hand
+  subjects: null
+preprocess:
+  fmin: 8.0
+  fmax: 30.0
+  tmin: 0.5
+  tmax: 3.5
+  resample: 160
+  drop_eog: true
+  scale: 1000000.0
+  covariance:
+    estimator: scm
+    epsilon: 1.0e-06
+protocol:
+  name: loso
+  target_data_usage: transductive_unlabeled_all
+  online_prefix_n_trials: 20
+  few_shot_n_trials: 10
+method:
+  name: tsa_ss
+  anchor_strategy: pseudo_label
+  k_dim: 16
+  subspace_lock_weight: 1.0
+model:
+  name: tangent_lda
+runtime:
+  seed: 42
+  n_jobs: 8
+  cache_dir: data/cache
+  results_dir: results
+  capture_env: true
+experiment_name: tsa_ss
+eval:
+  compute_baseline: false
+  baseline_method: identity
