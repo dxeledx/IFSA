@@ -16,6 +16,7 @@ expected=(
   results/tables/physionet_mi__ra_riemann__csp_lda__transductive_unlabeled_all.csv
   results/tables/physionet_mi__coral__csp_lda__transductive_unlabeled_all.csv
   results/tables/physionet_mi__ifsa_final_v2__csp_lda__transductive_unlabeled_all.csv
+  results/tables/physionet_mi__ifsa_final_v2_no_hold__csp_lda__transductive_unlabeled_all.csv
   results/tables/physionet_mi__tsa__tangent_lda__transductive_unlabeled_all.csv
   results/tables/physionet_mi__tsa_ss__tangent_lda__transductive_unlabeled_all.csv
 )
@@ -52,4 +53,3 @@ echo "[watch] generating reports..."
 bash scripts/remote/physionet_mi_final_v2_trans_report_inner.sh
 
 echo "[done] watch complete"
-

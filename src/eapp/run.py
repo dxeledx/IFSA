@@ -232,6 +232,8 @@ def main(argv: list[str] | None = None) -> None:
         compute_baseline=bool(cfg.eval.compute_baseline),
         baseline_method=str(cfg.eval.baseline_method),
         n_jobs=int(runtime.n_jobs),
+        subject_n_jobs=int(getattr(cfg.eval, "subject_n_jobs", 1)),
+        trim_memory=bool(getattr(cfg.eval, "trim_memory", False)),
     )
 
     df.insert(0, "dataset", str(cfg.dataset.name))

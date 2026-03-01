@@ -31,10 +31,17 @@ python -m eapp.report_pairwise \
 python -m eapp.report_pairwise \
   --dataset "${ds}" \
   --target-data-usage "${tdu}" \
+  --model csp_lda \
+  --target-variant ifsa_final_v2_no_hold \
+  --baselines ea,ra,ra_riemann,coral,identity \
+  --no-plot
+
+python -m eapp.report_pairwise \
+  --dataset "${ds}" \
+  --target-data-usage "${tdu}" \
   --model tangent_lda \
   --target-variant tsa_ss \
   --baselines tsa \
   --no-plot
 
 echo "[done] physionet_mi final v2 trans reports complete"
-

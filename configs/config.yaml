@@ -11,6 +11,11 @@ defaults:
 eval:
   compute_baseline: true
   baseline_method: identity
+  # Optional: parallelize per-subject alignment inside a fold (helps large datasets
+  # like PhysioNetMI without blowing up memory by running many folds in parallel).
+  subject_n_jobs: 1
+  # Optional: call gc + malloc_trim between folds to avoid RSS growth.
+  trim_memory: false
 
 hydra:
   run:

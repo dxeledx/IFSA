@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gc
 import time
 from dataclasses import dataclass
 
@@ -34,6 +35,31 @@ class ProtocolConfig:
     target_data_usage: str
     online_prefix_n_trials: int
     few_shot_n_trials: int
+
+
+def _trim_memory() -> None:
+    """Best-effort memory trim to reduce RSS growth on large runs.
+
+    - `gc.collect()` clears reference cycles promptly.
+    - On glibc (Linux), `malloc_trim(0)` may return freed heap pages to the OS.
+    """
+
+    gc.collect()
+    try:
+        import ctypes
+        import ctypes.util
+
+        libc_name = ctypes.util.find_library("c")
+        if not libc_name:
+            return
+        libc = ctypes.CDLL(libc_name)
+        trim = getattr(libc, "malloc_trim", None)
+        if trim is None:
+            return
+        trim(0)
+    except Exception:
+        # Never fail evaluation due to trimming.
+        return
 
 
 def _split_loso(meta: pd.DataFrame) -> list[tuple[int, np.ndarray, np.ndarray]]:
@@ -553,13 +579,17 @@ def _fit_ifsa_aligners_per_subject(
     *,
     target_mean_cov: np.ndarray | None = None,
     target_dispersion: float | None = None,
+    n_jobs: int = 1,
+    inplace: bool = False,
 ) -> tuple[np.ndarray, dict[int, object]]:
     subjects = meta["subject"].to_numpy()
-    out = np.empty_like(x)
-    aligners: dict[int, object] = {}
+    unique_subjects = np.unique(subjects)
+    out = x if inplace else np.empty_like(x)
 
     cfg = _ifsa_cfg(method_cfg)
-    for s in np.unique(subjects):
+    max_jobs = min(int(n_jobs), int(unique_subjects.shape[0])) if int(n_jobs) > 0 else 1
+
+    def _fit_one(s: int) -> tuple[int, object]:
         mask = subjects == s
         x_s = x[mask]
         aligner = IFSASignalAligner(
@@ -570,9 +600,64 @@ def _fit_ifsa_aligners_per_subject(
             target_dispersion=target_dispersion,
         ).fit(x_s)
         out[mask] = aligner.transform(x_s)
-        aligners[int(s)] = aligner
+        return int(s), aligner
+
+    if max_jobs <= 1:
+        results = [_fit_one(int(s)) for s in unique_subjects]
+    else:
+        results = Parallel(n_jobs=max_jobs, prefer="threads")(
+            delayed(_fit_one)(int(s)) for s in unique_subjects
+        )
+
+    aligners: dict[int, object] = {sid: aligner for sid, aligner in results}
 
     return out, aligners
+
+
+def _fit_ifsa_matrices_per_subject(
+    x: np.ndarray,
+    meta: pd.DataFrame,
+    cov_cfg: CovarianceConfig,
+    method_cfg: dict,
+    reference_cov: np.ndarray,
+    *,
+    target_mean_cov: np.ndarray | None = None,
+    target_dispersion: float | None = None,
+    n_jobs: int = 1,
+) -> dict[int, np.ndarray]:
+    """Fit per-subject IFSA aligners and return only their A matrices.
+
+    Used by safety guards (e.g. disc-loss) to avoid materializing aligned signals.
+    """
+
+    subjects = meta["subject"].to_numpy()
+    unique_subjects = np.unique(subjects)
+    cfg = _ifsa_cfg(method_cfg)
+    max_jobs = min(int(n_jobs), int(unique_subjects.shape[0])) if int(n_jobs) > 0 else 1
+
+    def _fit_one(s: int) -> tuple[int, np.ndarray]:
+        mask = subjects == s
+        x_s = x[mask]
+        aligner = IFSASignalAligner(
+            cov_cfg,
+            cfg,
+            reference_cov=reference_cov,
+            target_mean_cov=target_mean_cov,
+            target_dispersion=target_dispersion,
+        ).fit(x_s)
+        a = getattr(aligner, "matrix", None)
+        if a is None:
+            raise RuntimeError("IFSA aligner matrix is None after fit()")
+        return int(s), np.asarray(a, dtype=float)
+
+    if max_jobs <= 1:
+        results = [_fit_one(int(s)) for s in unique_subjects]
+    else:
+        results = Parallel(n_jobs=max_jobs, prefer="threads")(
+            delayed(_fit_one)(int(s)) for s in unique_subjects
+        )
+
+    return {sid: a for sid, a in results}
 
 
 def _fit_ifsa_target_aligner(
@@ -596,12 +681,16 @@ def _fit_signal_aligners_per_subject(
     cov_cfg: CovarianceConfig,
     method_name: str,
     method_cfg: dict,
+    *,
+    n_jobs: int = 1,
+    inplace: bool = False,
 ) -> tuple[np.ndarray, dict[int, object]]:
     subjects = meta["subject"].to_numpy()
-    out = np.empty_like(x)
-    aligners: dict[int, object] = {}
+    unique_subjects = np.unique(subjects)
+    out = x if inplace else np.empty_like(x)
+    max_jobs = min(int(n_jobs), int(unique_subjects.shape[0])) if int(n_jobs) > 0 else 1
 
-    for s in np.unique(subjects):
+    def _fit_one(s: int) -> tuple[int, object]:
         mask = subjects == s
         x_s = x[mask]
 
@@ -629,8 +718,16 @@ def _fit_signal_aligners_per_subject(
             raise ValueError(f"Unsupported signal method: {method_name}")
 
         out[mask] = aligner.transform(x_s)
-        aligners[int(s)] = aligner
+        return int(s), aligner
 
+    if max_jobs <= 1:
+        results = [_fit_one(int(s)) for s in unique_subjects]
+    else:
+        results = Parallel(n_jobs=max_jobs, prefer="threads")(
+            delayed(_fit_one)(int(s)) for s in unique_subjects
+        )
+
+    aligners: dict[int, object] = {sid: aligner for sid, aligner in results}
     return out, aligners
 
 
@@ -683,6 +780,7 @@ def _run_signal_fold(
     method_cfg: dict,
     model_name: str,
     model_cfg: dict,
+    subject_n_jobs: int = 1,
 ) -> tuple[float, float, int, dict]:
     x_train = x[train_idx]
     y_train = y[train_idx]
@@ -708,7 +806,7 @@ def _run_signal_fold(
             raise ValueError(f"Unknown CORAL mean_mode={mean_mode!r}")
 
         subjects = meta_train["subject"].to_numpy()
-        x_train_aligned = np.empty_like(x_train)
+        x_train_aligned = x_train
         for s in np.unique(subjects):
             mask = subjects == s
             x_s = x_train[mask]
@@ -1013,7 +1111,7 @@ def _run_signal_fold(
 
                 # Candidate source->target alignment (used both for scoring and, if safe,
                 # for training). Target data remains identity in target-guided mode.
-                x_train_candidate, _ = _fit_ifsa_aligners_per_subject(
+                a_by_subject = _fit_ifsa_matrices_per_subject(
                     x_train,
                     meta_train,
                     cov_cfg,
@@ -1021,8 +1119,19 @@ def _run_signal_fold(
                     ref,
                     target_mean_cov=target_mean_cov,
                     target_dispersion=target_disp,
+                    n_jobs=int(subject_n_jobs),
                 )
-                covs_candidate = compute_covariances(x_train_candidate, cov_cfg)
+                subjects = meta_train["subject"].to_numpy()
+                covs_candidate = np.empty_like(covs_train)
+                for s in np.unique(subjects):
+                    mask = subjects == s
+                    a = a_by_subject[int(s)]
+                    covs_candidate[mask] = np.einsum(
+                        "ij,njk,lk->nil",
+                        a,
+                        covs_train[mask],
+                        a,
+                    )
                 disc_after = _ifsa_disc_separation_score_from_covs(
                     covs_candidate,
                     y_train,
@@ -1062,7 +1171,17 @@ def _run_signal_fold(
                     x_test_aligned = x_test
                     target_aligner = IdentitySignalAligner(n_channels=x.shape[1])
                 else:
-                    x_train_aligned = x_train_candidate
+                    x_train_aligned, _ = _fit_ifsa_aligners_per_subject(
+                        x_train,
+                        meta_train,
+                        cov_cfg,
+                        method_cfg_eff,
+                        ref,
+                        target_mean_cov=target_mean_cov,
+                        target_dispersion=target_disp,
+                        n_jobs=int(subject_n_jobs),
+                        inplace=True,
+                    )
                     x_test_aligned = x_test
                     target_aligner = IdentitySignalAligner(n_channels=x.shape[1])
             else:
@@ -1159,7 +1278,6 @@ def _run_signal_fold(
                     else:
                         raise ValueError(f"Unknown IFSA safety_mode={safety_mode!r}")
 
-                x_train_candidate = None
                 if (
                     safety_disc_loss_tau > 0.0
                     and safety_score_mode == "track_error"
@@ -1193,7 +1311,7 @@ def _run_signal_fold(
                             target_mean_cov=target_mean_cov,
                         )
 
-                    x_train_candidate, _ = _fit_ifsa_aligners_per_subject(
+                    a_by_subject = _fit_ifsa_matrices_per_subject(
                         x_train,
                         meta_train,
                         cov_cfg,
@@ -1201,8 +1319,19 @@ def _run_signal_fold(
                         ref,
                         target_mean_cov=target_mean_cov,
                         target_dispersion=target_disp,
+                        n_jobs=int(subject_n_jobs),
                     )
-                    covs_candidate = compute_covariances(x_train_candidate, cov_cfg)
+                    subjects = meta_train["subject"].to_numpy()
+                    covs_candidate = np.empty_like(covs_train)
+                    for s in np.unique(subjects):
+                        mask = subjects == s
+                        a = a_by_subject[int(s)]
+                        covs_candidate[mask] = np.einsum(
+                            "ij,njk,lk->nil",
+                            a,
+                            covs_train[mask],
+                            a,
+                        )
                     disc_after = _ifsa_disc_separation_score_from_covs(
                         covs_candidate,
                         y_train,
@@ -1217,9 +1346,6 @@ def _run_signal_fold(
                     if np.isfinite(disc_loss_val) and disc_loss_val <= float(safety_disc_loss_tau):
                         gate_factor = 1.0
                         hold = 0
-                    else:
-                        # Keep gating; discard candidate alignment (if any).
-                        x_train_candidate = None
 
                 # Optional v30 low-score hold (only when safety is enabled).
                 if safety_mode != "none" and safety_low_score_mult > 0.0:
@@ -1237,42 +1363,39 @@ def _run_signal_fold(
                     x_test_aligned = x_test
                     target_aligner = IdentitySignalAligner(n_channels=x.shape[1])
                 else:
-                    if x_train_candidate is not None and float(gate_factor) == 1.0:
-                        x_train_aligned = x_train_candidate
-                        x_test_aligned = x_test
-                        target_aligner = IdentitySignalAligner(n_channels=x.shape[1])
-                    else:
-                        method_cfg_eff2 = dict(method_cfg_eff)
-                        method_cfg_eff2["lambda_track"] = float(
-                            method_cfg_eff2["lambda_track"]
-                        ) * float(gate_factor)
+                    method_cfg_eff2 = dict(method_cfg_eff)
+                    method_cfg_eff2["lambda_track"] = (
+                        float(method_cfg_eff2["lambda_track"]) * float(gate_factor)
+                    )
 
-                        target_mean_cov = _ifsa_target_mean_cov(
+                    target_mean_cov = _ifsa_target_mean_cov(
+                        x_fit,
+                        cov_cfg,
+                        cfg_ifsa,
+                        covs=covs_fit,
+                    )
+                    target_disp = None
+                    if float(cfg_ifsa.lambda_disp) > 0.0:
+                        target_disp = _ifsa_target_dispersion(
                             x_fit,
                             cov_cfg,
                             cfg_ifsa,
-                            covs=covs_fit,
-                        )
-                        target_disp = None
-                        if float(cfg_ifsa.lambda_disp) > 0.0:
-                            target_disp = _ifsa_target_dispersion(
-                                x_fit,
-                                cov_cfg,
-                                cfg_ifsa,
-                                reference_cov=ref,
-                                target_mean_cov=target_mean_cov,
-                            )
-                        x_train_aligned, _ = _fit_ifsa_aligners_per_subject(
-                            x_train,
-                            meta_train,
-                            cov_cfg,
-                            method_cfg_eff2,
-                            ref,
+                            reference_cov=ref,
                             target_mean_cov=target_mean_cov,
-                            target_dispersion=target_disp,
                         )
-                        x_test_aligned = x_test
-                        target_aligner = IdentitySignalAligner(n_channels=x.shape[1])
+                    x_train_aligned, _ = _fit_ifsa_aligners_per_subject(
+                        x_train,
+                        meta_train,
+                        cov_cfg,
+                        method_cfg_eff2,
+                        ref,
+                        target_mean_cov=target_mean_cov,
+                        target_dispersion=target_disp,
+                        n_jobs=int(subject_n_jobs),
+                        inplace=True,
+                    )
+                    x_test_aligned = x_test
+                    target_aligner = IdentitySignalAligner(n_channels=x.shape[1])
 
             extra_gate = {
                 "ifsa_safety_gate_factor": float(gate_factor),
@@ -1295,6 +1418,8 @@ def _run_signal_fold(
                 cov_cfg,
                 method_cfg_eff,
                 ref,
+                n_jobs=int(subject_n_jobs),
+                inplace=True,
             )
             x_test_aligned, target_aligner, n_fit = _fit_ifsa_target_aligner(
                 x_test,
@@ -1305,7 +1430,13 @@ def _run_signal_fold(
             )
     else:
         x_train_aligned, _ = _fit_signal_aligners_per_subject(
-            x_train, meta_train, cov_cfg, method_name, method_cfg
+            x_train,
+            meta_train,
+            cov_cfg,
+            method_name,
+            method_cfg,
+            n_jobs=int(subject_n_jobs),
+            inplace=True,
         )
         x_test_aligned, target_aligner, n_fit = _fit_target_aligner(
             x_test, cov_cfg, method_name, method_cfg, protocol
@@ -1443,8 +1574,15 @@ def run_loso(
     compute_baseline: bool,
     baseline_method: str,
     n_jobs: int = 1,
+    subject_n_jobs: int = 1,
+    trim_memory: bool = False,
 ) -> pd.DataFrame:
     folds = _split_loso(meta)
+    fold_n_jobs = max(1, int(n_jobs))
+    subj_n_jobs = max(1, int(subject_n_jobs))
+    if fold_n_jobs > 1:
+        # Avoid nested parallelism by default.
+        subj_n_jobs = 1
 
     def _run_one_fold(
         target_subject: int, train_idx: np.ndarray, test_idx: np.ndarray
@@ -1473,6 +1611,7 @@ def run_loso(
                 method_cfg=method_cfg,
                 model_name=model_name,
                 model_cfg=model_cfg,
+                subject_n_jobs=subj_n_jobs,
             )
         else:
             acc, kappa, n_fit, extra = _run_tangent_fold(
@@ -1533,6 +1672,7 @@ def run_loso(
                     method_cfg={},
                     model_name=model_name,
                     model_cfg=model_cfg,
+                    subject_n_jobs=subj_n_jobs,
                 )
                 baseline_acc = float(acc_b)
                 baseline_kappa = float(kappa_b)
@@ -1544,15 +1684,18 @@ def run_loso(
             row["neg_transfer"] = bool(row["acc"] < row["baseline_acc"])
             pair = (float(baseline_acc), float(acc))
 
+        if bool(trim_memory):
+            _trim_memory()
+
         return row, pair
 
-    if int(n_jobs) <= 1 or len(folds) <= 1:
+    if fold_n_jobs <= 1 or len(folds) <= 1:
         fold_results = [
             _run_one_fold(target_subject, train_idx, test_idx)
             for target_subject, train_idx, test_idx in folds
         ]
     else:
-        fold_results = Parallel(n_jobs=min(int(n_jobs), len(folds)), prefer="threads")(
+        fold_results = Parallel(n_jobs=min(fold_n_jobs, len(folds)), prefer="threads")(
             delayed(_run_one_fold)(target_subject, train_idx, test_idx)
             for target_subject, train_idx, test_idx in folds
         )

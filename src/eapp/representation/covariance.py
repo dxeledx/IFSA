@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 
 import numpy as np
+from joblib import Parallel, delayed
 from sklearn.covariance import LedoitWolf
 
 
@@ -42,6 +44,18 @@ def compute_covariances(x: np.ndarray, cfg: CovarianceConfig) -> np.ndarray:
     else:
         raise ValueError(f"Unknown covariance.estimator={cfg.estimator}")
 
-    covs = np.stack([fn(trial, cfg.epsilon) for trial in x], axis=0)
-    return covs
+    n_jobs_env = os.environ.get("EAPP_COV_N_JOBS", "")
+    try:
+        n_jobs = int(n_jobs_env) if n_jobs_env else 1
+    except ValueError:
+        n_jobs = 1
+    n_jobs = max(1, n_jobs)
 
+    if n_jobs <= 1 or x.shape[0] <= 1:
+        return np.stack([fn(trial, cfg.epsilon) for trial in x], axis=0)
+
+    max_jobs = min(int(n_jobs), int(x.shape[0]))
+    cov_list = Parallel(n_jobs=max_jobs, prefer="threads")(
+        delayed(fn)(trial, cfg.epsilon) for trial in x
+    )
+    return np.stack(cov_list, axis=0)
