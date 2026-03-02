@@ -98,23 +98,3 @@ safety_disc_loss_tau: 0.0
 # relative to tau_eff, skip alignment (fallback to identity) to avoid injecting
 # noise. 0 disables.
 safety_low_score_mult: 0.0
-
-# Optional disc-loss fallback (target-guided only): when the candidate IFSA
-# alignment collapses the source discriminative structure, use EA instead of
-# IFSA for that fold (still unlabeled on target; source-only labels are used
-# for disc-loss estimation).
-# - none: disable
-# - ea: fallback to EA
-safety_disc_fallback_mode: none
-
-# Only consider the fallback when score_target / tau_eff is at least this
-# ratio. Set to inf to disable. (Used to avoid extra work when the safety score
-# indicates the target is clearly in-distribution.)
-safety_disc_fallback_ratio_min: inf
-
-# Trigger EA fallback when disc_loss > this threshold. 0 disables.
-safety_disc_fallback_tau: 0.0
-
-# Limit disc-loss estimation cost by sampling up to this many source trials per
-# class (0 = use all).
-safety_disc_fallback_max_trials_per_class: 0

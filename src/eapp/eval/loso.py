@@ -1064,16 +1064,6 @@ def _run_signal_fold(
             )
             safety_disc_loss_tau = float(method_cfg_eff.get("safety_disc_loss_tau", 0.0))
             safety_low_score_mult = float(method_cfg_eff.get("safety_low_score_mult", 0.0))
-            safety_disc_fallback_mode = str(
-                method_cfg_eff.get("safety_disc_fallback_mode", "none")
-            )
-            safety_disc_fallback_ratio_min = float(
-                method_cfg_eff.get("safety_disc_fallback_ratio_min", float("inf"))
-            )
-            safety_disc_fallback_tau = float(method_cfg_eff.get("safety_disc_fallback_tau", 0.0))
-            safety_disc_fallback_max_trials_per_class = int(
-                method_cfg_eff.get("safety_disc_fallback_max_trials_per_class", 0)
-            )
 
             safety_quantile = max(0.0, min(1.0, safety_quantile))
             safety_tau_mult = max(0.0, safety_tau_mult)
@@ -1081,19 +1071,6 @@ def _run_signal_fold(
             safety_hold_gate_threshold = max(0.0, min(1.0, safety_hold_gate_threshold))
             safety_disc_loss_tau = max(0.0, min(1.0, safety_disc_loss_tau))
             safety_low_score_mult = max(0.0, min(1.0, safety_low_score_mult))
-            if safety_disc_fallback_mode not in {"none", "ea"}:
-                raise ValueError(
-                    "Unknown IFSA safety_disc_fallback_mode="
-                    f"{safety_disc_fallback_mode!r}; expected 'none' or 'ea'"
-                )
-            if not np.isfinite(safety_disc_fallback_ratio_min):
-                safety_disc_fallback_ratio_min = float("inf")
-            else:
-                safety_disc_fallback_ratio_min = max(0.0, float(safety_disc_fallback_ratio_min))
-            safety_disc_fallback_tau = max(0.0, min(1.0, float(safety_disc_fallback_tau)))
-            safety_disc_fallback_max_trials_per_class = max(
-                0, int(safety_disc_fallback_max_trials_per_class)
-            )
 
             gate_factor = 1.0
             tau_source = float("nan")
@@ -1103,9 +1080,6 @@ def _run_signal_fold(
             disc_loss_tau_eff = float(safety_disc_loss_tau)
             low_tau_eff = float("nan")
             low_hold = 0
-            fallback_mode_id = 0
-            disc_fallback_triggered = 0
-            disc_fallback_disc_loss = float("nan")
 
             if safety_score_mode == "disc_loss":
                 score_mode_id = 2
@@ -1192,7 +1166,6 @@ def _run_signal_fold(
                 else:
                     raise ValueError(f"Unknown IFSA safety_mode={safety_mode!r}")
 
-                fallback_mode_id = 1 if hold == 1 else 0
                 if gate_factor <= 0.0:
                     x_train_aligned = x_train
                     x_test_aligned = x_test
@@ -1385,134 +1358,7 @@ def _run_signal_fold(
                         gate_factor = 0.0
                         hold = 1
 
-                fallback_mode_id = 1 if hold == 1 else 0
-
-                if (
-                    safety_disc_fallback_mode == "ea"
-                    and safety_disc_fallback_tau > 0.0
-                    and hold == 0
-                    and float(gate_factor) > 0.0
-                    and np.isfinite(score_target)
-                    and np.isfinite(tau_eff)
-                ):
-                    ratio = float(score_target) / max(1e-12, float(tau_eff))
-                    if np.isfinite(ratio) and float(ratio) >= float(safety_disc_fallback_ratio_min):
-                        if np.isfinite(disc_loss_val):
-                            disc_fallback_disc_loss = float(disc_loss_val)
-                        else:
-                            rng = np.random.default_rng(0)
-                            max_trials_per_class = int(safety_disc_fallback_max_trials_per_class)
-                            sample_idx_parts = []
-                            for k in np.unique(y_train):
-                                idx_k = np.flatnonzero(y_train == k)
-                                if (
-                                    max_trials_per_class > 0
-                                    and idx_k.shape[0] > max_trials_per_class
-                                ):
-                                    idx_k = rng.choice(
-                                        idx_k,
-                                        size=max_trials_per_class,
-                                        replace=False,
-                                    )
-                                sample_idx_parts.append(np.asarray(idx_k, dtype=int))
-                            sample_idx = (
-                                np.sort(np.unique(np.concatenate(sample_idx_parts)))
-                                if sample_idx_parts
-                                else np.asarray([], dtype=int)
-                            )
-
-                            if sample_idx.shape[0] > 0:
-                                x_sample = x_train[sample_idx]
-                                y_sample = y_train[sample_idx]
-                                subjects_sample = meta_train["subject"].to_numpy()[sample_idx]
-                                covs_sample = compute_covariances(x_sample, cov_cfg)
-                                disc_before = _ifsa_disc_separation_score_from_covs(
-                                    covs_sample,
-                                    y_sample,
-                                    mean_mode=str(cfg_ifsa.mean_mode),
-                                    eps=cov_cfg.epsilon,
-                                )
-
-                                if disc_before > 0.0 and np.isfinite(disc_before):
-                                    target_mean_cov = _ifsa_target_mean_cov(
-                                        x_fit,
-                                        cov_cfg,
-                                        cfg_ifsa,
-                                        covs=covs_fit,
-                                    )
-                                    target_disp = None
-                                    if float(cfg_ifsa.lambda_disp) > 0.0:
-                                        target_disp = _ifsa_target_dispersion(
-                                            x_fit,
-                                            cov_cfg,
-                                            cfg_ifsa,
-                                            reference_cov=ref,
-                                            target_mean_cov=target_mean_cov,
-                                        )
-
-                                    a_by_subject = _fit_ifsa_matrices_per_subject(
-                                        x_train,
-                                        meta_train,
-                                        cov_cfg,
-                                        method_cfg_eff,
-                                        ref,
-                                        target_mean_cov=target_mean_cov,
-                                        target_dispersion=target_disp,
-                                        n_jobs=int(subject_n_jobs),
-                                    )
-                                    covs_sample_aligned = np.empty_like(covs_sample)
-                                    for s in np.unique(subjects_sample):
-                                        mask = subjects_sample == s
-                                        a = a_by_subject[int(s)]
-                                        covs_sample_aligned[mask] = np.einsum(
-                                            "ij,njk,lk->nil",
-                                            a,
-                                            covs_sample[mask],
-                                            a,
-                                        )
-                                    disc_after = _ifsa_disc_separation_score_from_covs(
-                                        covs_sample_aligned,
-                                        y_sample,
-                                        mean_mode=str(cfg_ifsa.mean_mode),
-                                        eps=cov_cfg.epsilon,
-                                    )
-                                    disc_fallback_disc_loss = max(
-                                        0.0,
-                                        1.0 - float(disc_after) / max(1e-12, float(disc_before)),
-                                    )
-
-                                del covs_sample
-                                if "covs_sample_aligned" in locals():
-                                    del covs_sample_aligned
-                                del x_sample
-                                del y_sample
-                                del subjects_sample
-
-                        if (
-                            np.isfinite(disc_fallback_disc_loss)
-                            and float(disc_fallback_disc_loss) > float(safety_disc_fallback_tau)
-                        ):
-                            fallback_mode_id = 2
-                            disc_fallback_triggered = 1
-
-                if fallback_mode_id == 2:
-                    x_train_aligned, _ = _fit_signal_aligners_per_subject(
-                        x_train,
-                        meta_train,
-                        cov_cfg,
-                        "ea",
-                        {},
-                        n_jobs=int(subject_n_jobs),
-                        inplace=True,
-                    )
-                    x_test_aligned, target_aligner, n_fit = _fit_target_aligner(
-                        x_test,
-                        cov_cfg,
-                        "ea",
-                        {},
-                        protocol,
-                    )
-                elif gate_factor <= 0.0:
+                if gate_factor <= 0.0:
                     x_train_aligned = x_train
                     x_test_aligned = x_test
                     target_aligner = IdentitySignalAligner(n_channels=x.shape[1])
@@ -1564,14 +1410,6 @@ def _run_signal_fold(
                 "ifsa_safety_low_score_mult": float(safety_low_score_mult),
                 "ifsa_safety_low_tau_eff": float(low_tau_eff),
                 "ifsa_safety_low_hold": int(low_hold),
-                "ifsa_safety_fallback_mode": int(fallback_mode_id),
-                "ifsa_safety_disc_fallback_ratio_min": float(safety_disc_fallback_ratio_min),
-                "ifsa_safety_disc_fallback_tau": float(safety_disc_fallback_tau),
-                "ifsa_safety_disc_fallback_triggered": int(disc_fallback_triggered),
-                "ifsa_safety_disc_fallback_disc_loss": float(disc_fallback_disc_loss),
-                "ifsa_safety_disc_fallback_max_trials_per_class": int(
-                    safety_disc_fallback_max_trials_per_class
-                ),
             }
         else:
             x_train_aligned, _ = _fit_ifsa_aligners_per_subject(
@@ -1896,12 +1734,6 @@ def run_loso(
         "ifsa_safety_low_score_mult",
         "ifsa_safety_low_tau_eff",
         "ifsa_safety_low_hold",
-        "ifsa_safety_fallback_mode",
-        "ifsa_safety_disc_fallback_ratio_min",
-        "ifsa_safety_disc_fallback_tau",
-        "ifsa_safety_disc_fallback_triggered",
-        "ifsa_safety_disc_fallback_disc_loss",
-        "ifsa_safety_disc_fallback_max_trials_per_class",
         "principal_angle_deg_mean",
         "subspace_similarity_mean",
     ]
