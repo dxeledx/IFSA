@@ -98,3 +98,12 @@ safety_disc_loss_tau: 0.0
 # relative to tau_eff, skip alignment (fallback to identity) to avoid injecting
 # noise. 0 disables.
 safety_low_score_mult: 0.0
+
+# Optional v3 disc-scale attenuation: when candidate IFSA alignment collapses
+# source discriminative structure (disc_loss is high), continuously attenuate
+# thrust magnitude instead of hard-holding or falling back to another method.
+# - safety_disc_scale_tau: maximum acceptable disc_loss; 0 disables.
+# - safety_disc_scale_max_trials_per_class: cap trials per class when estimating
+#   disc_loss for scaling (0 uses full source trials).
+safety_disc_scale_tau: 0.0
+safety_disc_scale_max_trials_per_class: 0
