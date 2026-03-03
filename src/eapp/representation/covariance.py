@@ -4,7 +4,7 @@ import os
 from dataclasses import dataclass
 
 import numpy as np
-from joblib import Parallel, delayed
+from joblib import Parallel, delayed, parallel
 from sklearn.covariance import LedoitWolf
 
 
@@ -50,6 +50,18 @@ def compute_covariances(x: np.ndarray, cfg: CovarianceConfig) -> np.ndarray:
     except ValueError:
         n_jobs = 1
     n_jobs = max(1, n_jobs)
+
+    # Avoid nested parallelism: outer joblib loops already spread work across
+    # folds/subjects; spawning per-trial threads inside those workers leads to
+    # oversubscription and can slow down or bloat memory.
+    try:
+        backend, _ = parallel.get_active_backend()
+        nesting = int(getattr(backend, "nesting_level", 0) or 0)
+        if nesting > 0:
+            n_jobs = 1
+    except Exception:
+        # Never fail covariance computation due to backend introspection.
+        pass
 
     if n_jobs <= 1 or x.shape[0] <= 1:
         return np.stack([fn(trial, cfg.epsilon) for trial in x], axis=0)
