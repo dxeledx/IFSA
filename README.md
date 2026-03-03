@@ -1,6 +1,6 @@
-# EA++ (Research Infra)
+# IFSA (Research Infra)
 
-Cross-subject EEG alignment research infra (EA / RA / TSA + EA++ / TSA-SS), CPU-first and
+Cross-subject EEG alignment research infra (EA / RA / TSA + IFSA / TSA-SS), CPU-first and
 reproducibility-first.
 
 ## Local setup
@@ -28,14 +28,6 @@ python -m eapp.run experiment=ifsa_no_spec
 python -m eapp.run experiment=ifsa_no_damp
 python -m eapp.run experiment=ifsa_no_energy
 python -m eapp.run experiment=ifsa_trigger
-
-# EA++
-python -m eapp.run experiment=ea_pp
-
-# EA++ ablations
-python -m eapp.run experiment=ea_pp_no_spec
-python -m eapp.run experiment=ea_pp_no_energy
-python -m eapp.run experiment=ea_pp_k0
 
 # TSA-SS
 python -m eapp.run experiment=tsa_ss

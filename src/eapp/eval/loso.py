@@ -10,7 +10,6 @@ from joblib import Parallel, delayed
 
 from eapp.alignment.coral import CoralSignalAligner, coral_matrix
 from eapp.alignment.ea import EASignalAligner
-from eapp.alignment.ea_pp import EAPPConfig, EAPPSignalAligner
 from eapp.alignment.identity import IdentitySignalAligner
 from eapp.alignment.ifsa import IFSAConfig, IFSASignalAligner
 from eapp.alignment.ra import RASignalAligner
@@ -704,16 +703,6 @@ def _fit_signal_aligners_per_subject(
             from eapp.alignment.ra_riemann import RARiemannSignalAligner
 
             aligner = RARiemannSignalAligner(cov_cfg).fit(x_s)
-        elif method_name == "ea_pp":
-            cfg = EAPPConfig(
-                lambda_mean=float(method_cfg["lambda_mean"]),
-                lambda_spec=float(method_cfg["lambda_spec"]),
-                lambda_u=float(method_cfg["lambda_u"]),
-                k_steps=int(method_cfg["k_steps"]),
-                lr=float(method_cfg["lr"]),
-                ema_alpha=float(method_cfg["ema_alpha"]),
-            )
-            aligner = EAPPSignalAligner(cov_cfg, cfg).fit(x_s)
         else:
             raise ValueError(f"Unsupported signal method: {method_name}")
 
@@ -751,16 +740,6 @@ def _fit_target_aligner(
         from eapp.alignment.ra_riemann import RARiemannSignalAligner
 
         aligner = RARiemannSignalAligner(cov_cfg).fit(x_for_fit)
-    elif method_name == "ea_pp":
-        cfg = EAPPConfig(
-            lambda_mean=float(method_cfg["lambda_mean"]),
-            lambda_spec=float(method_cfg["lambda_spec"]),
-            lambda_u=float(method_cfg["lambda_u"]),
-            k_steps=int(method_cfg["k_steps"]),
-            lr=float(method_cfg["lr"]),
-            ema_alpha=float(method_cfg["ema_alpha"]),
-        )
-        aligner = EAPPSignalAligner(cov_cfg, cfg).fit(x_for_fit)
     else:
         raise ValueError(f"Unsupported signal method: {method_name}")
 
@@ -1712,7 +1691,6 @@ def run_loso(
             "ea",
             "ra",
             "ra_riemann",
-            "ea_pp",
             "ifsa",
             "coral",
             "coral_safe",

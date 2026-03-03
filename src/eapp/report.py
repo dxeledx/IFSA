@@ -126,10 +126,6 @@ def _variant_sort_key(variant: str) -> tuple[int, str]:
         "ifsa_no_damp": 27,
         "ifsa_no_energy": 28,
         "ifsa_trigger": 29,
-        "ea_pp": 30,
-        "ea_pp_no_spec": 31,
-        "ea_pp_no_energy": 32,
-        "ea_pp_k0": 33,
         "tsa": 40,
         "tsa_ss": 41,
         "tangent_identity": 5,
@@ -249,33 +245,7 @@ def main(argv: list[str] | None = None) -> None:
                 tables=model_tables, baseline_variant=baseline_variant, baseline_acc=baseline_acc
             )
 
-        # ---------- Family 2: EA++ vs EA ----------
-        ea_acc: dict[int, float] | None = None
-        for t in model_tables:
-            if t.variant == "ea":
-                ea_acc = t.subject_acc
-                break
-        ea_pp_variants = [t for t in model_tables if t.variant.startswith("ea_pp")]
-        p_vs_ea = {}
-        if ea_acc is not None and ea_pp_variants:
-            p_values = []
-            effects = []
-            variants = []
-            for t in ea_pp_variants:
-                b, m, _ = _aligned_arrays(ea_acc, t.subject_acc)
-                stats = paired_wilcoxon_with_effect(b, m)
-                p_values.append(float(stats.p_value))
-                effects.append(float(stats.effect_rank_biserial))
-                variants.append(t.variant)
-            p_holm = holm_adjust(p_values)
-            for i, v in enumerate(variants):
-                p_vs_ea[v] = {
-                    "p_vs_ea": float(p_values[i]),
-                    "p_holm_vs_ea": float(p_holm[i]),
-                    "effect_vs_ea": float(effects[i]),
-                }
-
-        # ---------- Family 3: TSA-SS vs TSA ----------
+        # ---------- Family 2: TSA-SS vs TSA ----------
         tsa_acc: dict[int, float] | None = None
         for t in model_tables:
             if t.variant == "tsa":
@@ -310,9 +280,6 @@ def main(argv: list[str] | None = None) -> None:
                 "p_holm": float("nan"),
                 "effect_rank_biserial": float("nan"),
                 "neg_transfer_ratio": float("nan"),
-                "p_vs_ea": float("nan"),
-                "p_holm_vs_ea": float("nan"),
-                "effect_vs_ea": float("nan"),
                 "p_vs_tsa": float("nan"),
                 "p_holm_vs_tsa": float("nan"),
                 "effect_vs_tsa": float("nan"),
@@ -321,10 +288,6 @@ def main(argv: list[str] | None = None) -> None:
             s1 = family1_stats.get(t.variant)
             if s1 is not None:
                 row.update(s1)
-
-            s2 = p_vs_ea.get(t.variant)
-            if s2 is not None:
-                row.update(s2)
 
             s3 = p_vs_tsa.get(t.variant)
             if s3 is not None:

@@ -38,7 +38,6 @@ def _method_sort_key(method: str) -> tuple[int, str]:
         "coral_safe": 26,
         "tl_center_scale": 27,
         "ifsa": 30,
-        "ea_pp": 40,
         "tsa": 50,
         "tsa_ss": 60,
     }

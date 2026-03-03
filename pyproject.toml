@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "eapp"
 version = "0.1.0"
-description = "Cross-subject EEG alignment infra (EA++ / TSA-SS)"
+description = "Cross-subject EEG alignment infra (IFSA / TSA-SS)"
 readme = "README.md"
 requires-python = ">=3.10"
 

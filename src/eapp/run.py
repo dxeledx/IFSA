@@ -10,21 +10,17 @@ from hashlib import sha256
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 from hydra import compose, initialize_config_dir
 from hydra.core.global_hydra import GlobalHydra
 from omegaconf import OmegaConf
 
-from eapp.alignment.ea_pp import EAPPConfig, EAPPSignalAligner
 from eapp.datasets.moabb_dataset import load_moabb_dataset
 from eapp.eval.loso import ProtocolConfig, run_loso
 from eapp.eval.plots import (
     plot_baseline_vs_method,
-    plot_log_eig_violin,
     plot_paired_subject_lines,
 )
-from eapp.representation.covariance import CovarianceConfig, compute_covariances
-from eapp.utils.spd import log_eigvals_spd
+from eapp.representation.covariance import CovarianceConfig
 
 
 def _git_hash(repo_root: Path) -> str | None:
@@ -118,47 +114,6 @@ def _env_info(*, capture_pip: bool, repo_root: Path) -> dict:
 
 def _seed_everything(seed: int) -> None:
     np.random.seed(seed)
-
-
-def _collect_eapp_logeig(
-    x: np.ndarray,
-    meta: pd.DataFrame,
-    cov_cfg: CovarianceConfig,
-    method_cfg: dict,
-) -> pd.DataFrame:
-    rows = []
-    subjects = meta["subject"].to_numpy()
-    for s in np.unique(subjects):
-        x_s = x[subjects == s]
-        if x_s.shape[0] == 0:
-            continue
-
-        # Keep it cheap by sampling only a prefix.
-        x_s = x_s[: min(50, x_s.shape[0])]
-
-        cfg = EAPPConfig(
-            lambda_mean=float(method_cfg["lambda_mean"]),
-            lambda_spec=float(method_cfg["lambda_spec"]),
-            lambda_u=float(method_cfg["lambda_u"]),
-            k_steps=int(method_cfg["k_steps"]),
-            lr=float(method_cfg["lr"]),
-            ema_alpha=float(method_cfg["ema_alpha"]),
-        )
-        aligner = EAPPSignalAligner(cov_cfg, cfg).fit(x_s)
-        covs = compute_covariances(x_s, cov_cfg)
-
-        for cov in covs:
-            for val in log_eigvals_spd(cov, cov_cfg.epsilon):
-                rows.append({"stage": "before", "log_eig": float(val)})
-
-        a = aligner.matrix
-        assert a is not None
-        for cov in covs:
-            cov_a = a @ cov @ a.T
-            for val in log_eigvals_spd(cov_a, cov_cfg.epsilon):
-                rows.append({"stage": "after", "log_eig": float(val)})
-
-    return pd.DataFrame(rows)
 
 
 def _compose_cfg(overrides: list[str]) -> object:
@@ -255,11 +210,6 @@ def main(argv: list[str] | None = None) -> None:
 
     plot_baseline_vs_method(df, figs_dir / f"{tag}__bar.png")
     plot_paired_subject_lines(df, figs_dir / f"{tag}__paired.png")
-    if str(cfg.method.name) == "ea_pp":
-        df_logeig = _collect_eapp_logeig(
-            bundle.x, bundle.meta, cov_cfg, OmegaConf.to_container(cfg.method, resolve=True)
-        )
-        plot_log_eig_violin(df_logeig, figs_dir / f"{tag}__spectrum.png")
 
     print(f"[done] results: {csv_path}")
 

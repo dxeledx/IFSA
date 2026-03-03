@@ -1,2 +1,1 @@
-"""EA++ research infra (cross-subject EEG alignment)."""
-
+"""IFSA research infra (cross-subject EEG alignment)."""
