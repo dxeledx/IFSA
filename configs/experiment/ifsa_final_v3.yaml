@@ -41,8 +41,7 @@ method:
   safety_low_score_mult: 0.6
 
   # v3 disc-scale attenuation (continuous): if disc_loss > tau, shrink thrust magnitude.
-  safety_disc_scale_tau: 0.01
+  safety_disc_scale_tau: 0.2
   safety_disc_scale_max_trials_per_class: 200
 
   trigger_mode: fixed
-

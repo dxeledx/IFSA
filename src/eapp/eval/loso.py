@@ -1404,7 +1404,15 @@ def _run_signal_fold(
                         n_jobs=int(subject_n_jobs),
                     )
 
-                    if safety_mode != "none" and safety_disc_scale_tau > 0.0:
+                    # Disc-loss thrust attenuation (v3): only apply when the
+                    # primary safety gate is already scaling down (gate_factor < 1).
+                    # This avoids shrinking otherwise-safe folds to (near) identity.
+                    if (
+                        safety_mode == "scale_gain"
+                        and safety_disc_scale_tau > 0.0
+                        and np.isfinite(gate_factor)
+                        and float(gate_factor) < 1.0
+                    ):
                         if covs_train is None:
                             covs_train = compute_covariances(x_train, cov_cfg)
 
