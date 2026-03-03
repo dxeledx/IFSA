@@ -23,3 +23,7 @@ results/*
 
 # Local data caches (downloaded datasets, precomputed features)
 data/
+
+# Private research notes (never commit)
+*鸡头稳定*
+跨被试脑电运动意图识别中的数据对齐研究综述与工程化指南.md
